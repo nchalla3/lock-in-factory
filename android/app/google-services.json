@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "650324673364",
+    "project_id": "lock-in-factory-f6a0f",
+    "storage_bucket": "lock-in-factory-f6a0f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:650324673364:android:65be0a760e07b228047ec1",
+        "android_client_info": {
+          "package_name": "com.example.lock_in_factory"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBH_mrDTMZSIuOAls3IownAlVqpmduMqQc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
