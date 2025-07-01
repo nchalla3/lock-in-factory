@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -27,9 +30,15 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> signInWithGoogle() async {
     try {
       final GoogleSignIn signIn = GoogleSignIn.instance;
-      await signIn.initialize();
-      final GoogleSignInAccount? googleUser = await signIn.authenticate();
-      if (googleUser == null) return;
+      await signIn.initialize(clientId: '650324673364-7eg8kvpk9bkko3ub8hprriaeskocoalu.apps.googleusercontent.com');
+      if (kIsWeb) {
+        // On web, show a message or handle with a custom button in the UI
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google sign-in: Use the GoogleSignInButton widget on web.')),
+        );
+        return;
+      }
+      final GoogleSignInAccount googleUser = await signIn.authenticate();
 
       // Obtain the auth details from the account
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
