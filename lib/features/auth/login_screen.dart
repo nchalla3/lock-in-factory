@@ -1,7 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:google_sign_in_web/web_only.dart' as web;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,6 +14,20 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  late GoogleSignIn _googleSignIn;
+
+  @override
+  void initState() {
+    super.initState();
+    _googleSignIn = GoogleSignIn.instance;
+    if (kIsWeb) {
+      _googleSignIn.initialize(
+        clientId: '650324673364-7eg8kvpk9bkko3ub8hprriaeskocoalu.apps.googleusercontent.com',
+      );
+    } else {
+      _googleSignIn.initialize();
+    }
+  }
 
   Future<void> signInWithEmail() async {
     try {
@@ -29,17 +44,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> signInWithGoogle() async {
     try {
-      final GoogleSignIn signIn = GoogleSignIn.instance;
-      await signIn.initialize(clientId: '650324673364-7eg8kvpk9bkko3ub8hprriaeskocoalu.apps.googleusercontent.com');
-      if (kIsWeb) {
-        // On web, show a message or handle with a custom button in the UI
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google sign-in: Use the GoogleSignInButton widget on web.')),
-        );
-        return;
-      }
-      final GoogleSignInAccount googleUser = await signIn.authenticate();
-
+      // Use the authenticate method for both platforms
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
+      
       // Obtain the auth details from the account
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final idToken = googleAuth.idToken;
@@ -53,9 +60,11 @@ class _LoginScreenState extends State<LoginScreen> {
       // Once signed in, sign in to Firebase with the credential
       await FirebaseAuth.instance.signInWithCredential(credential);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google login failed: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google login failed: $e')),
+        );
+      }
     }
   }
 
@@ -73,7 +82,21 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 16),
             ElevatedButton(onPressed: signInWithEmail, child: const Text("Sign in with Email")),
             const SizedBox(height: 8),
-            ElevatedButton(onPressed: signInWithGoogle, child: const Text("Sign in with Google")),
+            if (_googleSignIn.supportsAuthenticate())
+              ElevatedButton(onPressed: signInWithGoogle, child: const Text("Sign in with Google"))
+            else if (kIsWeb)
+              // For web, use the renderButton from web_only.dart
+              web.renderButton()
+            else
+              // Fallback for unsupported platforms
+              ElevatedButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Google Sign-In not supported on this platform')),
+                  );
+                },
+                child: const Text("Sign in with Google (Not Supported)"),
+              ),
           ],
         ),
       ),
