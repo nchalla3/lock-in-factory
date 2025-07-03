@@ -98,8 +98,23 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       debugPrint('Attempting Google sign-in...');
       
-      // Use the authenticate method for both platforms
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      GoogleSignInAccount? googleUser;
+      
+      if (kIsWeb) {
+        // For web, try signInSilently first, then fallback to signIn
+        try {
+          googleUser = await _googleSignIn.signInSilently();
+        } catch (e) {
+          debugPrint('Silent sign-in failed, trying normal sign-in: $e');
+        }
+        
+        if (googleUser == null) {
+          googleUser = await _googleSignIn.signIn();
+        }
+      } else {
+        // For mobile platforms
+        googleUser = await _googleSignIn.signIn();
+      }
       
       if (googleUser == null) {
         debugPrint('Google sign-in was cancelled by user');
@@ -194,28 +209,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 : const Text("Sign in with Email"),
             ),
             const SizedBox(height: 8),
-            if (_googleSignIn.currentUser != null || !kIsWeb)
-              ElevatedButton(
-                onPressed: _isLoading ? null : signInWithGoogle,
-                child: _isLoading 
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text("Sign in with Google"),
-              )
-            else if (kIsWeb)
-              // For web, use the renderButton from web_only.dart
-              web.renderButton()
-            else
-              // Fallback for unsupported platforms
-              ElevatedButton(
-                onPressed: () {
-                  _showError('Google Sign-In not supported on this platform');
-                },
-                child: const Text("Sign in with Google (Not Supported)"),
-              ),
+            ElevatedButton(
+              onPressed: _isLoading ? null : signInWithGoogle,
+              child: _isLoading 
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text("Sign in with Google"),
+            ),
             
             if (_isLoading) ...[
               const SizedBox(height: 16),
