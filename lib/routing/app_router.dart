@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
 
 import '../features/auth/login_screen.dart';
 import '../screens/home_screen.dart';
@@ -10,6 +11,24 @@ import '../screens/lockin_details_screen.dart';
 import '../screens/profile_screen.dart';
 import '../widgets/app_shell.dart';
 
+/// A ChangeNotifier that listens to a Stream and notifies listeners when the stream emits new values
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen(
+      (dynamic _) => notifyListeners(),
+    );
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
   static final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -17,16 +36,21 @@ class AppRouter {
   static final GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/home',
+    refreshListenable: GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
     redirect: (context, state) {
       final user = FirebaseAuth.instance.currentUser;
       final isLoggedIn = user != null;
       final isLoggingIn = state.matchedLocation == '/login';
 
+      debugPrint('Router redirect: user=${user?.uid}, isLoggedIn=$isLoggedIn, location=${state.matchedLocation}');
+
       if (!isLoggedIn && !isLoggingIn) {
+        debugPrint('Redirecting to login - no user authenticated');
         return '/login';
       }
 
       if (isLoggedIn && isLoggingIn) {
+        debugPrint('Redirecting to home - user already authenticated');
         return '/home';
       }
 
